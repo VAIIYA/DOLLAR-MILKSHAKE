@@ -30,33 +30,36 @@ export default function Home() {
             {/* Hero */}
             <section className="hero">
                 <h1 className="hero-heading">
-                    Dollar Cost Average<br />into Memecoins
+                    Dollar Cost Average into{" "}
+                    <span className="accent">Memecoins</span>
                 </h1>
                 <p className="hero-sub">
-                    Deposit USDC or SOL once. Our broker buys $1 of your chosen memecoin
-                    every 24 hours — straight to your wallet.
+                    Deposit USDC or SOL once. We buy $1 of your chosen memecoin every 24
+                    hours via Jupiter Exchange — sent straight to your wallet.
                 </p>
 
                 <div className="how-grid">
                     <div className="how-card">
                         <div className="how-icon">💳</div>
-                        <div className="how-title">1. Deposit</div>
+                        <div className="how-title">Deposit</div>
                         <div className="how-desc">
-                            Send USDC or SOL to fund your DCA order. Minimum $5.
+                            Send USDC or SOL to fund your order. Minimum $5, maximum $10,000.
                         </div>
                     </div>
                     <div className="how-card">
                         <div className="how-icon">🔁</div>
-                        <div className="how-title">2. Daily Buys</div>
+                        <div className="how-title">Daily Buys</div>
                         <div className="how-desc">
-                            We buy exactly $1 of your memecoin every day via Jupiter Exchange.
+                            We automatically buy $1 of your memecoin every 24 hours via
+                            Jupiter.
                         </div>
                     </div>
                     <div className="how-card">
                         <div className="how-icon">📬</div>
-                        <div className="how-title">3. Receive</div>
+                        <div className="how-title">Receive</div>
                         <div className="how-desc">
-                            Tokens are sent to your wallet after each buy. Non-custodial.
+                            Tokens arrive in your wallet after each buy. Always
+                            non-custodial.
                         </div>
                     </div>
                 </div>
