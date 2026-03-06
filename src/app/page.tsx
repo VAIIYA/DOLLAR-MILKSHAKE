@@ -23,7 +23,7 @@ export default function Home() {
         <>
             {/* Sticky Navbar */}
             <nav className="navbar">
-                <span className="logo">🚀 MemeDCA</span>
+                <span className="logo">🥤 Dollar Milkshake</span>
                 <WalletMultiButton />
             </nav>
 

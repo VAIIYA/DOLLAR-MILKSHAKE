@@ -3,7 +3,7 @@ import SolanaWalletProvider from "@/components/wallet/WalletProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-    title: "MemeDCA — Dollar Cost Average into Memecoins",
+    title: "Dollar Milkshake — Dollar Cost Average into Memecoins",
     description:
         "Automatically DCA into Solana memecoins like BONK, WIF, and POPCAT using USDC or SOL. Powered by Jupiter Exchange.",
 };
