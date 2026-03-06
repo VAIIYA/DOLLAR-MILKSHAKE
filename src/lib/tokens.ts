@@ -11,6 +11,12 @@ export const SOL_MINT = "So11111111111111111111111111111111111111112";
 
 export const MEMECOINS: Memecoin[] = [
     {
+        symbol: "DMS",
+        name: "Dollar Milkshake",
+        mint: "23hCKRadDLv2vd6ST7TBPG7fsG4uUh7s27PCjcP4jups",
+        decimals: 6,
+    },
+    {
         symbol: "BONK",
         name: "Bonk",
         mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
