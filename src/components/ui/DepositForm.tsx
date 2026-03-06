@@ -47,7 +47,13 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
     const brokerPubkey = process.env.NEXT_PUBLIC_BROKER_WALLET_PUBKEY;
 
     const handleSubmit = useCallback(async () => {
-        if (!publicKey || !brokerPubkey || !calc) return;
+        if (!publicKey || !calc) return;
+
+        if (!brokerPubkey) {
+            setError("Configuration error: Broker wallet public key is missing. Please check your environment variables and redeploy.");
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
 
