@@ -5,10 +5,9 @@ import { useState } from "react";
 import DepositForm from "@/components/ui/DepositForm";
 import OrdersDashboard from "@/components/ui/OrdersDashboard";
 
-// WalletMultiButton must be client-only (no SSR)
-const WalletMultiButton = dynamic(
-    () =>
-        import("@solana/wallet-adapter-react-ui").then((m) => m.WalletMultiButton),
+// Custom wallet button must be client-only
+const CustomWalletButton = dynamic(
+    () => import("@/components/wallet/CustomWalletButton"),
     { ssr: false }
 );
 
@@ -24,7 +23,7 @@ export default function Home() {
             {/* Sticky Navbar */}
             <nav className="navbar">
                 <span className="logo">🥤 Dollar Milkshake</span>
-                <WalletMultiButton />
+                <CustomWalletButton />
             </nav>
 
             {/* Hero */}

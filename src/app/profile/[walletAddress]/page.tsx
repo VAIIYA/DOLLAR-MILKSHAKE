@@ -1,5 +1,11 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import OrdersDashboard from "@/components/ui/OrdersDashboard";
+
+const CustomWalletButton = dynamic(
+    () => import("@/components/wallet/CustomWalletButton"),
+    { ssr: false }
+);
 
 export default function ProfilePage({ params }: { params: { walletAddress: string } }) {
     const { walletAddress } = params;
@@ -11,6 +17,7 @@ export default function ProfilePage({ params }: { params: { walletAddress: strin
                 <Link href="/" className="logo" style={{ textDecoration: 'none' }}>
                     🥤 Dollar Milkshake
                 </Link>
+                <CustomWalletButton />
             </nav>
 
             <main className="container" style={{ marginTop: "2rem" }}>
