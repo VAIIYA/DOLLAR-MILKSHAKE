@@ -151,20 +151,23 @@ function OrderCard({ order }: { order: OrderWithExecutions }) {
 
 interface OrdersDashboardProps {
     refreshSignal?: number;
+    profileAddress?: string;
 }
 
-export default function OrdersDashboard({ refreshSignal }: OrdersDashboardProps) {
+export default function OrdersDashboard({ refreshSignal, profileAddress }: OrdersDashboardProps) {
     const { publicKey } = useWallet();
     const [orders, setOrders] = useState<OrderWithExecutions[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const addressToFetch = profileAddress || publicKey?.toBase58();
+
     const fetchOrders = useCallback(async () => {
-        if (!publicKey) return;
+        if (!addressToFetch) return;
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/orders?wallet=${publicKey.toBase58()}`);
+            const res = await fetch(`/api/orders?wallet=${addressToFetch}`);
             if (!res.ok) throw new Error("Failed to load orders");
             const data = await res.json();
             setOrders(data);
@@ -173,13 +176,16 @@ export default function OrdersDashboard({ refreshSignal }: OrdersDashboardProps)
         } finally {
             setLoading(false);
         }
-    }, [publicKey]);
+    }, [addressToFetch]);
 
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders, refreshSignal]);
 
-    if (!publicKey) return null;
+    if (!addressToFetch) return null;
+
+    const activeOrders = orders.filter((o) => o.status === "active" || o.status === "pending_deposit");
+    const completedOrders = orders.filter((o) => o.status !== "active" && o.status !== "pending_deposit");
 
     return (
         <section className="dashboard-section">
@@ -197,13 +203,28 @@ export default function OrdersDashboard({ refreshSignal }: OrdersDashboardProps)
             ) : orders.length === 0 ? (
                 <div className="empty-state">
                     <p>No active orders yet.</p>
-                    <p className="empty-sub">Make your first deposit above to start DCAing.</p>
+                    {!profileAddress && (
+                        <p className="empty-sub">Make your first deposit above to start DCAing.</p>
+                    )}
                 </div>
             ) : (
-                <div className="orders-list">
-                    {orders.map((order) => (
-                        <OrderCard key={order.id} order={order} />
-                    ))}
+                <div className="orders-sections">
+                    {activeOrders.length > 0 && (
+                        <div className="orders-list" style={{ marginBottom: "2rem" }}>
+                            <h3 style={{ marginBottom: "1rem", color: "var(--foreground)", fontSize: "1.1rem" }}>Open Orders</h3>
+                            {activeOrders.map((order) => (
+                                <OrderCard key={order.id} order={order} />
+                            ))}
+                        </div>
+                    )}
+                    {completedOrders.length > 0 && (
+                        <div className="orders-list">
+                            <h3 style={{ marginBottom: "1rem", color: "var(--foreground)", fontSize: "1.1rem" }}>Completed / Other Orders</h3>
+                            {completedOrders.map((order) => (
+                                <OrderCard key={order.id} order={order} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </section>
