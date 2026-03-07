@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import OrdersDashboard from "@/components/ui/OrdersDashboard";
@@ -9,8 +10,8 @@ const CustomWalletButton = dynamic(
     { ssr: false }
 );
 
-export default function ProfilePage({ params }: { params: { walletAddress: string } }) {
-    const { walletAddress } = params;
+export default function ProfilePage({ params }: { params: Promise<{ walletAddress: string }> }) {
+    const { walletAddress } = use(params);
 
     return (
         <>

@@ -14,7 +14,20 @@ export interface OrderCalculation {
     dailyAmount: number;
 }
 
-export function calculateOrder(depositAmountUsd: number): OrderCalculation {
+export async function getSolPriceUsd(): Promise<number> {
+    try {
+        const res = await fetch("https://price.jup.ag/v6/price?ids=SOL", {
+            next: { revalidate: 60 } // Cache for 60 seconds
+        });
+        if (!res.ok) return ROUGH_SOL_PRICE_USD;
+        const json = await res.json();
+        return json.data?.SOL?.price ?? ROUGH_SOL_PRICE_USD;
+    } catch {
+        return ROUGH_SOL_PRICE_USD;
+    }
+}
+
+export async function calculateOrder(depositAmountUsd: number): Promise<OrderCalculation> {
     if (depositAmountUsd < MIN_DEPOSIT_USD) {
         throw new Error(`Minimum deposit is $${MIN_DEPOSIT_USD}`);
     }
@@ -22,8 +35,9 @@ export function calculateOrder(depositAmountUsd: number): OrderCalculation {
         throw new Error(`Maximum deposit is $${MAX_DEPOSIT_USD}`);
     }
 
+    const solPrice = await getSolPriceUsd();
     const feeAmountUsd = depositAmountUsd * FEE_PERCENT;
-    const feeAmountSol = feeAmountUsd / ROUGH_SOL_PRICE_USD;
+    const feeAmountSol = feeAmountUsd / solPrice;
     const totalDays = Math.floor(depositAmountUsd / DAILY_BUY_AMOUNT_USD);
 
     return {
@@ -38,4 +52,16 @@ export function calculateOrder(depositAmountUsd: number): OrderCalculation {
 
 export function feeSolToLamports(feeAmountSol: number): number {
     return Math.floor(feeAmountSol * 1_000_000_000);
+}
+
+export function getNextNoonUTC(): Date {
+    const now = new Date();
+    const nextNoon = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0));
+
+    // If it's already past 12:00 PM UTC today, the next noon is tomorrow
+    if (now.getTime() > nextNoon.getTime()) {
+        nextNoon.setUTCDate(nextNoon.getUTCDate() + 1);
+    }
+
+    return nextNoon;
 }

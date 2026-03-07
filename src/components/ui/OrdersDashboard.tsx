@@ -10,6 +10,7 @@ const STATUS_COLORS: Record<string, string> = {
     pending_deposit: "#f59e0b",
     paused: "#f59e0b",
     failed: "var(--danger)",
+    cancelled: "var(--muted)",
 };
 
 const EXEC_STATUS_COLORS: Record<string, string> = {
@@ -25,13 +26,39 @@ function solscanLink(sig: string | null) {
     return `https://solscan.io/tx/${sig}`;
 }
 
-function OrderCard({ order }: { order: OrderWithExecutions }) {
+function OrderCard({ order, onRefresh }: { order: OrderWithExecutions; onRefresh: () => void }) {
+    const { publicKey } = useWallet();
     const [expanded, setExpanded] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const progress =
         order.totalDays > 0
             ? Math.round((order.daysCompleted / order.totalDays) * 100)
             : 0;
     const statusColor = STATUS_COLORS[order.status] ?? "var(--muted)";
+
+    const handleCancel = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!publicKey) return;
+        if (!confirm("Are you sure you want to cancel this DCA order? Any unspent deposit will be refunded to your wallet.")) return;
+
+        setCancelling(true);
+        try {
+            const res = await fetch(`/api/orders/${order.id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userWallet: publicKey.toBase58() }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to cancel");
+
+            alert(`Order cancelled!${data.refundTxSignature ? ` Refund transaction sent.` : ""}`);
+            onRefresh();
+        } catch (err) {
+            alert((err as Error).message);
+        } finally {
+            setCancelling(false);
+        }
+    };
 
     return (
         <div className="order-card">
@@ -90,6 +117,19 @@ function OrderCard({ order }: { order: OrderWithExecutions }) {
                     <span className="stat-value">${order.feeAmount.toFixed(2)}</span>
                 </div>
             </div>
+
+            {/* Actions */}
+            {expanded && order.status === "active" && order.userId === publicKey?.toBase58() && (
+                <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end" }}>
+                    <button
+                        onClick={handleCancel}
+                        disabled={cancelling}
+                        style={{ background: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", padding: "0.25rem 0.75rem", borderRadius: "4px", fontSize: "0.85rem", cursor: "pointer" }}
+                    >
+                        {cancelling ? "Cancelling..." : "Cancel DCA"}
+                    </button>
+                </div>
+            )}
 
             {/* Execution History */}
             {expanded && (
@@ -213,7 +253,7 @@ export default function OrdersDashboard({ refreshSignal, profileAddress }: Order
                         <div className="orders-list" style={{ marginBottom: "2rem" }}>
                             <h3 style={{ marginBottom: "1rem", color: "var(--foreground)", fontSize: "1.1rem" }}>Open Orders</h3>
                             {activeOrders.map((order) => (
-                                <OrderCard key={order.id} order={order} />
+                                <OrderCard key={order.id} order={order} onRefresh={fetchOrders} />
                             ))}
                         </div>
                     )}
@@ -221,7 +261,7 @@ export default function OrdersDashboard({ refreshSignal, profileAddress }: Order
                         <div className="orders-list">
                             <h3 style={{ marginBottom: "1rem", color: "var(--foreground)", fontSize: "1.1rem" }}>Completed / Other Orders</h3>
                             {completedOrders.map((order) => (
-                                <OrderCard key={order.id} order={order} />
+                                <OrderCard key={order.id} order={order} onRefresh={fetchOrders} />
                             ))}
                         </div>
                     )}

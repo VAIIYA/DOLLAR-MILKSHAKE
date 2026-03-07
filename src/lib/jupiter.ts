@@ -4,6 +4,7 @@ import {
     PublicKey,
     Transaction,
     VersionedTransaction,
+    SystemProgram,
 } from "@solana/web3.js";
 import {
     getOrCreateAssociatedTokenAccount,
@@ -177,6 +178,44 @@ export async function transferTokensToUser(
             brokerKeypair.publicKey,
             rawAmount
         )
+    );
+
+    transaction.sign(brokerKeypair);
+
+    const signature = await connection.sendRawTransaction(
+        transaction.serialize(),
+        { skipPreflight: false, maxRetries: 3 }
+    );
+
+    await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        "confirmed"
+    );
+
+    return { transferTxSignature: signature };
+}
+
+/**
+ * Transfer native SOL from broker to user.
+ */
+export async function transferSolToUser(
+    userWallet: PublicKey,
+    brokerKeypair: Keypair,
+    connection: Connection,
+    lamports: number
+): Promise<TransferResult> {
+    const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
+
+    const transaction = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: brokerKeypair.publicKey,
+    }).add(
+        SystemProgram.transfer({
+            fromPubkey: brokerKeypair.publicKey,
+            toPubkey: userWallet,
+            lamports,
+        })
     );
 
     transaction.sign(brokerKeypair);

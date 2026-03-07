@@ -27,7 +27,7 @@ export const orders = sqliteTable("orders", {
     daysCompleted: integer("days_completed").default(0).notNull(),
     remainingBalance: real("remaining_balance").notNull(),
     status: text("status", {
-        enum: ["pending_deposit", "active", "paused", "completed", "failed"],
+        enum: ["pending_deposit", "active", "paused", "completed", "failed", "cancelled"],
     })
         .default("pending_deposit")
         .notNull(),

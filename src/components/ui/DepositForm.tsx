@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import {
@@ -15,8 +15,10 @@ import {
     createAssociatedTokenAccountIdempotentInstruction,
     getMint,
 } from "@solana/spl-token";
-import { MEMECOINS, USDC_MINT, SOL_MINT } from "@/lib/tokens";
+import { USDC_MINT, SOL_MINT } from "@/lib/tokens";
+import type { Memecoin } from "@/lib/tokens";
 import { calculateOrder, feeSolToLamports } from "@/lib/fees";
+import type { OrderCalculation } from "@/lib/fees";
 import type { DepositCurrency, TxStep } from "@/types/index";
 
 interface DepositFormProps {
@@ -27,27 +29,76 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
     const { publicKey, sendTransaction } = useWallet();
     const { connection } = useConnection();
 
-    const [selectedToken, setSelectedToken] = useState(MEMECOINS[0]);
+    const [tokens, setTokens] = useState<Memecoin[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedToken, setSelectedToken] = useState<Memecoin | null>(null);
     const [depositAmount, setDepositAmount] = useState("");
     const [depositCurrency, setDepositCurrency] =
         useState<DepositCurrency>("USDC");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [txStep, setTxStep] = useState<TxStep>("idle");
+    const [calc, setCalc] = useState<OrderCalculation | null>(null);
 
     const amountNum = parseFloat(depositAmount);
     const isValidAmount = !isNaN(amountNum) && amountNum >= 5 && amountNum <= 10000;
-    let calc = null;
-    try {
-        if (isValidAmount) calc = calculateOrder(amountNum);
-    } catch {
-        // ignore
-    }
+
+    useEffect(() => {
+        let isMounted = true;
+        async function loadTokens() {
+            try {
+                const res = await fetch("https://tokens.jup.ag/tokens?tags=verified");
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!isMounted) return;
+                const mapped: Memecoin[] = data.map((t: any) => ({
+                    symbol: t.symbol,
+                    name: t.name,
+                    mint: t.address,
+                    decimals: t.decimals,
+                    logoUrl: t.logoURI,
+                }));
+                setTokens(mapped);
+
+                const defaultToken = mapped.find(t => t.symbol === "WEN") || mapped[0];
+                setSelectedToken(defaultToken);
+            } catch (err) {
+                console.error("Failed to load tokens:", err);
+            }
+        }
+        loadTokens();
+        return () => { isMounted = false; };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        async function runCalc() {
+            if (isValidAmount) {
+                try {
+                    const result = await calculateOrder(amountNum);
+                    if (isMounted) setCalc(result);
+                } catch {
+                    if (isMounted) setCalc(null);
+                }
+            } else {
+                if (isMounted) setCalc(null);
+            }
+        }
+        const to = setTimeout(runCalc, 300); // 300ms debounce
+        return () => {
+            isMounted = false;
+            clearTimeout(to);
+        };
+    }, [amountNum, isValidAmount]);
+
+    const filteredTokens = tokens
+        .filter(t => t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .slice(0, 12);
 
     const brokerPubkey = process.env.NEXT_PUBLIC_BROKER_WALLET_PUBKEY;
 
     const handleSubmit = useCallback(async () => {
-        if (!publicKey || !calc) return;
+        if (!publicKey || !calc || !selectedToken) return;
 
         if (!brokerPubkey) {
             setError("Configuration error: Broker wallet public key is missing. Please check your environment variables and redeploy.");
@@ -189,16 +240,35 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
         <div className="deposit-form">
             {/* Token Grid */}
             <div className="form-section">
-                <label className="form-label">Choose a memecoin</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Choose a memecoin</label>
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--background)' }}
+                    />
+                </div>
                 <div className="token-grid">
-                    {MEMECOINS.map((token) => (
+                    {tokens.length === 0 ? (
+                        <div style={{ padding: '1rem', color: 'var(--muted)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading tokens...</div>
+                    ) : filteredTokens.length === 0 ? (
+                        <div style={{ padding: '1rem', color: 'var(--muted)', gridColumn: '1 / -1', textAlign: 'center' }}>No tokens found</div>
+                    ) : filteredTokens.map((token) => (
                         <button
                             key={token.mint}
-                            className={`token-btn${selectedToken.mint === token.mint ? " selected" : ""}`}
+                            className={`token-btn${selectedToken?.mint === token.mint ? " selected" : ""}`}
                             onClick={() => setSelectedToken(token)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                         >
-                            <span className="token-symbol">{token.symbol}</span>
-                            <span className="token-name">{token.name}</span>
+                            {token.logoUrl && (
+                                <img src={token.logoUrl} alt={token.symbol} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                <span className="token-symbol">{token.symbol}</span>
+                                <span className="token-name" style={{ fontSize: '0.75rem', maxWidth: '80px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{token.name}</span>
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -248,7 +318,7 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
                 <div className="fee-summary">
                     <div className="fee-row">
                         <span>Daily buy</span>
-                        <span>${calc.dailyAmount.toFixed(2)} of {selectedToken.symbol}</span>
+                        <span>${calc.dailyAmount.toFixed(2)} of {selectedToken?.symbol}</span>
                     </div>
                     <div className="fee-row">
                         <span>Duration</span>

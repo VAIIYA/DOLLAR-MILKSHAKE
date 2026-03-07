@@ -59,67 +59,84 @@ export async function GET(req: NextRequest) {
             executedAt: new Date().toISOString(),
         });
 
-        try {
-            // ─ Step 1: Get Jupiter quote ────────────────────────────────────────
-            const amountLamports = usdcToLamports(order.dailyAmount);
-            const quote = await getQuote(USDC_MINT, order.tokenMint, amountLamports);
+        let attempt = 0;
+        const MAX_ATTEMPTS = 3;
+        let success = false;
+        let lastError: unknown = null;
 
-            // ─ Step 2: Execute swap ─────────────────────────────────────────────
-            const { swapTxSignature, outputAmount, outputAmountUi } =
-                await executeSwap(quote, brokerKeypair, connection);
+        while (attempt < MAX_ATTEMPTS && !success) {
+            try {
+                // ─ Step 1: Get Jupiter quote ────────────────────────────────────────
+                const amountLamports = usdcToLamports(order.dailyAmount);
+                const quote = await getQuote(USDC_MINT, order.tokenMint, amountLamports);
 
-            // Update execution to "transferring"
-            await db
-                .update(executions)
-                .set({
-                    status: "transferring",
-                    swapTxSignature,
-                    outputAmount,
-                    outputAmountUi,
-                    jupiterQuoteId: quote.quoteId ?? null,
-                })
-                .where(eq(executions.id, executionId));
+                // ─ Step 2: Execute swap ─────────────────────────────────────────────
+                const { swapTxSignature, outputAmount, outputAmountUi } =
+                    await executeSwap(quote, brokerKeypair, connection);
 
-            // ─ Step 3: Transfer tokens to user ─────────────────────────────────
-            const { transferTxSignature } = await transferTokensToUser(
-                new PublicKey(order.tokenMint),
-                new PublicKey(order.userId),
-                brokerKeypair,
-                connection,
-                outputAmount
-            );
+                // Update execution to "transferring"
+                await db
+                    .update(executions)
+                    .set({
+                        status: "transferring",
+                        swapTxSignature,
+                        outputAmount,
+                        outputAmountUi,
+                        jupiterQuoteId: quote.quoteId ?? null,
+                    })
+                    .where(eq(executions.id, executionId));
 
-            // Update execution to "completed"
-            await db
-                .update(executions)
-                .set({
-                    status: "completed",
-                    transferTxSignature,
-                })
-                .where(eq(executions.id, executionId));
+                // ─ Step 3: Transfer tokens to user ─────────────────────────────────
+                const { transferTxSignature } = await transferTokensToUser(
+                    new PublicKey(order.tokenMint),
+                    new PublicKey(order.userId),
+                    brokerKeypair,
+                    connection,
+                    outputAmount
+                );
 
-            // ─ Step 4: Update order ─────────────────────────────────────────────
-            const newDaysCompleted = order.daysCompleted + 1;
-            const newRemainingBalance = order.remainingBalance - order.dailyAmount;
-            const isComplete = newDaysCompleted >= order.totalDays;
+                // Update execution to "completed"
+                await db
+                    .update(executions)
+                    .set({
+                        status: "completed",
+                        transferTxSignature,
+                    })
+                    .where(eq(executions.id, executionId));
 
-            await db
-                .update(orders)
-                .set({
-                    daysCompleted: newDaysCompleted,
-                    remainingBalance: Math.max(0, newRemainingBalance),
-                    status: isComplete ? "completed" : "active",
-                    completedAt: isComplete ? new Date().toISOString() : null,
-                    nextBuyAt: isComplete
-                        ? null
-                        : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                })
-                .where(eq(orders.id, order.id));
+                // ─ Step 4: Update order ─────────────────────────────────────────────
+                const newDaysCompleted = order.daysCompleted + 1;
+                const newRemainingBalance = order.remainingBalance - order.dailyAmount;
+                const isComplete = newDaysCompleted >= order.totalDays;
 
-            succeeded++;
-        } catch (err) {
+                await db
+                    .update(orders)
+                    .set({
+                        daysCompleted: newDaysCompleted,
+                        remainingBalance: Math.max(0, newRemainingBalance),
+                        status: isComplete ? "completed" : "active",
+                        completedAt: isComplete ? new Date().toISOString() : null,
+                        nextBuyAt: isComplete
+                            ? null
+                            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    })
+                    .where(eq(orders.id, order.id));
+
+                success = true;
+                succeeded++;
+            } catch (err) {
+                lastError = err;
+                attempt++;
+                if (attempt < MAX_ATTEMPTS) {
+                    console.log(`Retry attempt ${attempt} for order ${order.id}...`);
+                    await new Promise((res) => setTimeout(res, 3000));
+                }
+            }
+        }
+
+        if (!success) {
             const errorMessage =
-                err instanceof Error ? err.message : "Unknown error";
+                lastError instanceof Error ? lastError.message : "Unknown error";
             errors.push(`Order ${order.id}: ${errorMessage}`);
             failed++;
 

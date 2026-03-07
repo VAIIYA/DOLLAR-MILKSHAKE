@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
     title: "Dollar Milkshake — Dollar Cost Average into Memecoins",
     description:
-        "Automatically DCA into Solana memecoins like BONK, WIF, and POPCAT using USDC or SOL. Powered by Jupiter Exchange.",
+        "Automatically DCA into Solana memecoins like BONK, WEN, and POPCAT using USDC or SOL. Powered by Jupiter Exchange.",
 };
 
 export default function RootLayout({

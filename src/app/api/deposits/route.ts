@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, orders } from "@/lib/schema";
-import { calculateOrder } from "@/lib/fees";
+import { calculateOrder, getNextNoonUTC } from "@/lib/fees";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
         let calc;
         try {
-            calc = calculateOrder(Number(depositAmountUsd));
+            calc = await calculateOrder(Number(depositAmountUsd));
         } catch (e) {
             return NextResponse.json(
                 { error: (e as Error).message },
@@ -61,9 +61,7 @@ export async function POST(req: NextRequest) {
 
         // Create order
         const orderId = crypto.randomUUID();
-        const nextBuyAt = new Date(
-            Date.now() + 24 * 60 * 60 * 1000
-        ).toISOString();
+        const nextBuyAt = getNextNoonUTC().toISOString();
 
         await db.insert(orders).values({
             id: orderId,
