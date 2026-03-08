@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
         // Create order
         const orderId = crypto.randomUUID();
-        const nextBuyAt = getNextNoonUTC().toISOString().replace('T', ' ').replace('Z', '');
+        const nextBuyAt = getNextNoonUTC();
 
         await db.insert(orders).values({
             id: orderId,

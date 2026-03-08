@@ -54,7 +54,7 @@ export function feeSolToLamports(feeAmountSol: number): number {
     return Math.floor(feeAmountSol * 1_000_000_000);
 }
 
-export function getNextNoonUTC(): Date {
+export function getNextNoonUTC(): string {
     const now = new Date();
     const nextNoon = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0));
 
@@ -63,5 +63,5 @@ export function getNextNoonUTC(): Date {
         nextNoon.setUTCDate(nextNoon.getUTCDate() + 1);
     }
 
-    return nextNoon;
+    return nextNoon.toISOString().replace('T', ' ').replace('Z', '');
 }
