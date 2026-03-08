@@ -68,7 +68,7 @@ export async function PATCH(
             );
         }
 
-        const now = new Date().toISOString();
+        const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
         const nextBuyAt = now;
 
         await db
@@ -179,7 +179,7 @@ export async function DELETE(
             .set({
                 status: "cancelled",
                 nextBuyAt: null,
-                completedAt: new Date().toISOString()
+                completedAt: new Date().toISOString().replace('T', ' ').replace('Z', '')
             })
             .where(eq(orders.id, id));
 

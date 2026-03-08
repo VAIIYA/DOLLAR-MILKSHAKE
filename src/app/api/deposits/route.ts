@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         if (!existingUser) {
             await db.insert(users).values({
                 id: userWallet,
-                createdAt: new Date().toISOString(),
+                createdAt: new Date().toISOString().replace('T', ' ').replace('Z', ''),
                 totalDeposited: 0,
                 totalFeesPaid: 0,
             });
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
         // Create order
         const orderId = crypto.randomUUID();
-        const nextBuyAt = getNextNoonUTC().toISOString();
+        const nextBuyAt = getNextNoonUTC().toISOString().replace('T', ' ').replace('Z', '');
 
         await db.insert(orders).values({
             id: orderId,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
             daysCompleted: 0,
             remainingBalance: calc.depositAmount,
             status: "pending_deposit",
-            createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString().replace('T', ' ').replace('Z', ''),
             nextBuyAt,
         });
 

@@ -23,10 +23,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("Cron started, checking for due orders at:", new Date().toISOString());
+    console.log("Cron started, checking for due orders at:", new Date().toISOString().replace('T', ' ').replace('Z', ''));
 
     // ── Setup ─────────────────────────────────────────────────────────────────
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
     let processed = 0;
     let succeeded = 0;
     let failed = 0;
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
             outputMint: order.tokenMint,
             status: "swapping",
             dayNumber,
-            executedAt: new Date().toISOString(),
+            executedAt: new Date().toISOString().replace('T', ' ').replace('Z', ''),
         });
 
         let attempt = 0;
@@ -127,10 +127,10 @@ export async function GET(req: NextRequest) {
                         daysCompleted: newDaysCompleted,
                         remainingBalance: Math.max(0, newRemainingBalance),
                         status: isComplete ? "completed" : "active",
-                        completedAt: isComplete ? new Date().toISOString() : null,
+                        completedAt: isComplete ? new Date().toISOString().replace('T', ' ').replace('Z', '') : null,
                         nextBuyAt: isComplete
                             ? null
-                            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', ''),
                     })
                     .where(eq(orders.id, order.id));
 
@@ -164,7 +164,7 @@ export async function GET(req: NextRequest) {
                 .set({
                     nextBuyAt: new Date(
                         Date.now() + 24 * 60 * 60 * 1000
-                    ).toISOString(),
+                    ).toISOString().replace('T', ' ').replace('Z', ''),
                 })
                 .where(eq(orders.id, order.id));
         }
