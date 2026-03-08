@@ -62,7 +62,10 @@ export async function getQuote(
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
-    const res = await fetch(url.toString(), { signal: controller.signal });
+    const res = await fetch(url.toString(), {
+        signal: controller.signal,
+        headers: { 'Authorization': `Bearer ${process.env.JUPITER_API_KEY}` }
+    });
     clearTimeout(timeout);
     if (!res.ok) {
         const text = await res.text();
@@ -89,7 +92,10 @@ export async function executeSwap(
     // Request swap transaction from Jupiter
     const swapRes = await fetch("https://api.jup.ag/swap/v1/swap", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.JUPITER_API_KEY}`
+        },
         body: JSON.stringify({
             quoteResponse: quote,
             userPublicKey: brokerKeypair.publicKey.toBase58(),
