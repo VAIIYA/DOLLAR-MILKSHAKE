@@ -54,13 +54,16 @@ export async function getQuote(
     amountLamports: number,
     slippageBps = 100
 ): Promise<JupiterQuote> {
-    const url = new URL("https://quote-api.jup.ag/v6/quote");
+    const url = new URL("https://api.jup.ag/swap/v1/quote");
     url.searchParams.set("inputMint", inputMint);
     url.searchParams.set("outputMint", outputMint);
     url.searchParams.set("amount", String(amountLamports));
     url.searchParams.set("slippageBps", String(slippageBps));
 
-    const res = await fetch(url.toString());
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(url.toString(), { signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) {
         const text = await res.text();
         throw new Error(`Jupiter quote failed: ${res.status} ${text}`);
@@ -81,8 +84,10 @@ export async function executeSwap(
     brokerKeypair: Keypair,
     connection: Connection
 ): Promise<SwapResult> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     // Request swap transaction from Jupiter
-    const swapRes = await fetch("https://quote-api.jup.ag/v6/swap", {
+    const swapRes = await fetch("https://api.jup.ag/swap/v1/swap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,7 +97,9 @@ export async function executeSwap(
             dynamicComputeUnitLimit: true,
             prioritizationFeeLamports: "auto",
         }),
+        signal: controller.signal
     });
+    clearTimeout(timeout);
 
     if (!swapRes.ok) {
         const text = await swapRes.text();

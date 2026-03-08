@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    serverExternalPackages: ['@solana/web3.js', 'bs58'],
     webpack: (config, { isServer }) => {
         if (!isServer) {
             config.resolve.fallback = {
