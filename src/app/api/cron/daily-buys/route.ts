@@ -170,12 +170,12 @@ export async function GET(req: NextRequest) {
                 .set({ status: "failed", errorMessage })
                 .where(eq(executions.id, executionId));
 
-            // Advance nextBuyAt by 24h so we retry tomorrow
+            // Advance nextBuyAt by 1h so we retry next hour
             await db
                 .update(orders)
                 .set({
                     nextBuyAt: new Date(
-                        Date.now() + 24 * 60 * 60 * 1000
+                        Date.now() + 60 * 60 * 1000
                     ).toISOString().replace('T', ' ').replace('Z', ''),
                 })
                 .where(eq(orders.id, order.id));
