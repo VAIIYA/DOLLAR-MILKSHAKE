@@ -127,8 +127,8 @@ export async function GET(req: NextRequest) {
             } catch (err) {
                 lastError = err;
                 attempt++;
+                console.error("Swap failed for order", order.id, "attempt", attempt, err);
                 if (attempt < MAX_ATTEMPTS) {
-                    console.log(`Retry attempt ${attempt} for order ${order.id}...`);
                     await new Promise((res) => setTimeout(res, 3000));
                 }
             }
@@ -157,6 +157,8 @@ export async function GET(req: NextRequest) {
                 .where(eq(orders.id, order.id));
         }
     }
+
+    console.log("Cron result:", { processed, succeeded, failed, errors });
 
     return NextResponse.json({
         processed,
