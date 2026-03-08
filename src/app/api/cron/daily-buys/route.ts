@@ -46,6 +46,18 @@ export async function GET(req: NextRequest) {
             .where(and(eq(orders.status, "active"), lte(orders.nextBuyAt!, now)));
 
         console.log("Due orders found:", dueOrders.length, JSON.stringify(dueOrders.map(o => ({ id: o.id, status: o.status, nextBuyAt: o.nextBuyAt }))));
+
+        console.log("Query debug - now value:", now, "type:", typeof now);
+
+        // Run a raw debug query to verify
+        const allActive = await db.select().from(orders).where(eq(orders.status, "active"));
+        console.log("All active orders:", JSON.stringify(allActive.map(o => ({
+            id: o.id,
+            nextBuyAt: o.nextBuyAt,
+            nextBuyAtType: typeof o.nextBuyAt,
+            nowValue: now,
+            comparison: (o.nextBuyAt ?? "") <= now
+        }))));
     } catch (setupErr) {
         console.error("SETUP FAILED:", String(setupErr));
         return NextResponse.json({ error: "Setup failed", detail: String(setupErr) }, { status: 500 });
