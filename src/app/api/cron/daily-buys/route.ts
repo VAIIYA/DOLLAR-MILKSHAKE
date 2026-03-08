@@ -32,17 +32,26 @@ export async function GET(req: NextRequest) {
     let failed = 0;
     const errors: string[] = [];
 
-    const brokerKeypair = getBrokerKeypair();
-    const connection = getConnection();
+    let brokerKeypair, connection, dueOrders;
+    try {
+        brokerKeypair = getBrokerKeypair();
+        console.log("Broker keypair loaded OK");
+        connection = getConnection();
+        console.log("Connection loaded OK");
 
-    // ── Fetch due orders ──────────────────────────────────────────────────────
-    const dueOrders = await db
-        .select()
-        .from(orders)
-        .where(and(eq(orders.status, "active"), lte(orders.nextBuyAt!, now)));
+        // ── Fetch due orders ──────────────────────────────────────────────────────
+        dueOrders = await db
+            .select()
+            .from(orders)
+            .where(and(eq(orders.status, "active"), lte(orders.nextBuyAt!, now)));
+
+        console.log("Due orders found:", dueOrders.length, JSON.stringify(dueOrders.map(o => ({ id: o.id, status: o.status, nextBuyAt: o.nextBuyAt }))));
+    } catch (setupErr) {
+        console.error("SETUP FAILED:", String(setupErr));
+        return NextResponse.json({ error: "Setup failed", detail: String(setupErr) }, { status: 500 });
+    }
 
     processed = dueOrders.length;
-    console.log("Due orders found:", dueOrders.length, JSON.stringify(dueOrders.map(o => ({ id: o.id, status: o.status, nextBuyAt: o.nextBuyAt }))));
 
     // ── Process each order ────────────────────────────────────────────────────
     for (const order of dueOrders) {
