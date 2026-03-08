@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { orders, users, executions } from "@/lib/schema";
 import { eq, asc } from "drizzle-orm";
-import { getNextNoonUTC } from "@/lib/fees";
 
 export async function GET(
     _req: NextRequest,
@@ -70,7 +69,7 @@ export async function PATCH(
         }
 
         const now = new Date().toISOString();
-        const nextBuyAt = getNextNoonUTC().toISOString();
+        const nextBuyAt = now;
 
         await db
             .update(orders)
