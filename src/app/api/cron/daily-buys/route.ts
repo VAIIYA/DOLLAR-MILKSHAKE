@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("Cron started, checking for due orders at:", new Date().toISOString());
+
     // ── Setup ─────────────────────────────────────────────────────────────────
     const now = new Date().toISOString();
     let processed = 0;
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
         .where(and(eq(orders.status, "active"), lte(orders.nextBuyAt!, now)));
 
     processed = dueOrders.length;
+    console.log("Due orders found:", dueOrders.length, JSON.stringify(dueOrders.map(o => ({ id: o.id, status: o.status, nextBuyAt: o.nextBuyAt }))));
 
     // ── Process each order ────────────────────────────────────────────────────
     for (const order of dueOrders) {
