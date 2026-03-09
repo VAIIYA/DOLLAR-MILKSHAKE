@@ -64,7 +64,10 @@ export async function getQuote(
     const timeout = setTimeout(() => controller.abort(), 30000);
     const res = await fetch(url.toString(), {
         signal: controller.signal,
-        headers: { 'Authorization': `Bearer ${process.env.JUPITER_API_KEY}` }
+        headers: {
+            'Authorization': `Bearer ${process.env.JUPITER_API_KEY}`,
+            'x-api-key': process.env.JUPITER_API_KEY || ""
+        }
     });
     clearTimeout(timeout);
     if (!res.ok) {
@@ -94,7 +97,8 @@ export async function executeSwap(
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.JUPITER_API_KEY}`
+            "Authorization": `Bearer ${process.env.JUPITER_API_KEY}`,
+            "x-api-key": process.env.JUPITER_API_KEY || ""
         },
         body: JSON.stringify({
             quoteResponse: quote,

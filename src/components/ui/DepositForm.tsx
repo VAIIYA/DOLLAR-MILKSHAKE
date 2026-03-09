@@ -47,21 +47,31 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
         let isMounted = true;
         async function loadTokens() {
             try {
-                const res = await fetch("https://tokens.jup.ag/tokens?tags=verified");
-                if (!res.ok) return;
+                const res = await fetch("/api/tokens");
+                if (!res.ok) {
+                    console.warn(`Failed to fetch tokens: ${res.status}`);
+                    return;
+                }
                 const data = await res.json();
                 if (!isMounted) return;
-                const mapped: Memecoin[] = data.map((t: any) => ({
+
+                // data might be a direct array (v1) or have a different structure
+                const tokensArray = Array.isArray(data) ? data : data.data || [];
+
+                const mapped: Memecoin[] = tokensArray.map((t: any) => ({
                     symbol: t.symbol,
                     name: t.name,
-                    mint: t.address,
+                    mint: t.address || t.mint || t.id || "",
                     decimals: t.decimals,
-                    logoUrl: t.logoURI,
-                }));
+                    logoUrl: t.logoURI || t.icon || "",
+                })).filter((t: Memecoin) => t.mint !== "");
+
                 setTokens(mapped);
 
-                const defaultToken = mapped.find(t => t.symbol === "WEN") || mapped[0];
-                setSelectedToken(defaultToken);
+                const defaultToken = mapped.find((t: Memecoin) => t.symbol === "WEN") || mapped[0];
+                if (defaultToken) {
+                    setSelectedToken(defaultToken);
+                }
             } catch (err) {
                 console.error("Failed to load tokens:", err);
             }
