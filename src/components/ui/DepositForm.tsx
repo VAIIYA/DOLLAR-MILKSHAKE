@@ -218,27 +218,27 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
         <div className="deposit-form">
             {/* Token Grid */}
             <div className="form-section">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>Choose a memecoin</label>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Chosen memecoin</label>
                 </div>
-                <div className="token-grid">
-                    {tokens.length === 0 ? (
-                        <div style={{ padding: '1rem', color: 'var(--muted)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading tokens...</div>
-                    ) : filteredTokens.length === 0 ? (
-                        <div style={{ padding: '1rem', color: 'var(--muted)', gridColumn: '1 / -1', textAlign: 'center' }}>No tokens found</div>
-                    ) : filteredTokens.map((token) => (
+                <div className="token-grid" style={{ display: 'flex', justifyContent: 'center' }}>
+                    {tokens.map((token) => (
                         <button
                             key={token.mint}
                             className={`token-btn${selectedToken?.mint === token.mint ? " selected" : ""}`}
                             onClick={() => setSelectedToken(token)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px 24px', minWidth: '140px' }}
                         >
                             {token.logoUrl && (
-                                <img src={token.logoUrl} alt={token.symbol} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                <img 
+                                    src={token.logoUrl} 
+                                    alt={token.symbol} 
+                                    style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--purple)' }} 
+                                />
                             )}
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                <span className="token-symbol">{token.symbol}</span>
-                                <span className="token-name" style={{ fontSize: '0.75rem', maxWidth: '80px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{token.name}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <span className="token-symbol" style={{ fontSize: '1.1rem' }}>{token.symbol}</span>
+                                <span className="token-name" style={{ fontSize: '0.8rem' }}>{token.name}</span>
                             </div>
                         </button>
                     ))}

@@ -14,5 +14,5 @@ export const DMS_TOKEN: Memecoin = {
     name: "Dollar Milkshake",
     mint: "23hCKRadDLv2vd6ST7TBPG7fsG4uUh7s27PCjcP4jups",
     decimals: 9,
-    logoUrl: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/23hCKRadDLv2vd6ST7TBPG7fsG4uUh7s27PCjcP4jups/logo.png"
+    logoUrl: "/dms-logo.jpg"
 };
