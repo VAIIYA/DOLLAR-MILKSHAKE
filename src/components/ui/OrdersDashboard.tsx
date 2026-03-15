@@ -119,7 +119,7 @@ function OrderCard({ order, onRefresh }: { order: OrderWithExecutions; onRefresh
             </div>
 
             {/* Actions */}
-            {expanded && order.status === "active" && order.userId === publicKey?.toBase58() && (
+            {expanded && (order.status === "active" || order.status === "pending_deposit") && order.userId === publicKey?.toBase58() && (
                 <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end" }}>
                     <button
                         onClick={handleCancel}

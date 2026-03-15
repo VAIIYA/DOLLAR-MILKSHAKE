@@ -14,6 +14,8 @@ import {
     createTransferInstruction,
     createAssociatedTokenAccountIdempotentInstruction,
     getMint,
+    getAccount,
+    getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import { USDC_MINT, SOL_MINT, DMS_TOKEN } from "@/lib/tokens";
 import type { Memecoin } from "@/lib/tokens";
@@ -111,6 +113,37 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
             const { orderId, feeAmountSol } = await orderRes.json();
             const broker = new PublicKey(brokerPubkey);
 
+            // ─ Step 1.5: Balance Check ──────────────────────────────────────────
+            setTxStep("checking_balance");
+            const balance = await connection.getBalance(publicKey);
+            const feeLamports = feeSolToLamports(feeAmountSol);
+            const minSolRequired = 0.005 * LAMPORTS_PER_SOL; // Buffer for tx fees
+
+            if (depositCurrency === "SOL") {
+                const totalSolNeeded = Math.floor(amountNum * LAMPORTS_PER_SOL) + feeLamports + minSolRequired;
+                if (balance < totalSolNeeded) {
+                    throw new Error(`Insufficient SOL balance. You need approx ${(totalSolNeeded / LAMPORTS_PER_SOL).toFixed(4)} SOL but have ${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL.`);
+                }
+            } else {
+                // Check SOL for fees
+                if (balance < feeLamports + minSolRequired) {
+                    throw new Error(`Insufficient SOL for fees. You need approx ${((feeLamports + minSolRequired) / LAMPORTS_PER_SOL).toFixed(4)} SOL for the broker fee and network gas.`);
+                }
+                // Check USDC
+                const mintPubkey = new PublicKey(USDC_MINT);
+                const userAta = getAssociatedTokenAddressSync(mintPubkey, publicKey);
+                try {
+                    const tokenAccount = await getAccount(connection, userAta);
+                    const mintInfo = await getMint(connection, mintPubkey);
+                    const requiredTokens = Math.floor(amountNum * 10 ** mintInfo.decimals);
+                    if (Number(tokenAccount.amount) < requiredTokens) {
+                        throw new Error(`Insufficient USDC balance. You have ${Number(tokenAccount.amount) / 10 ** mintInfo.decimals} but need ${amountNum}.`);
+                    }
+                } catch (e) {
+                    throw new Error("Could not find USDC account. Please make sure you have USDC in your wallet.");
+                }
+            }
+
             // ─ Step 2: Deposit TX ──────────────────────────────────────────────
             setTxStep("awaiting_deposit");
             let depositTxSignature: string;
@@ -159,7 +192,6 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
             // ─ Step 3: Fee TX (SOL) ────────────────────────────────────────────
             setTxStep("awaiting_fee");
             const feeBlocks = await connection.getLatestBlockhash();
-            const feeLamports = feeSolToLamports(feeAmountSol);
             const feeTx = new Transaction({
                 recentBlockhash: feeBlocks.blockhash,
                 feePayer: publicKey,
@@ -196,13 +228,14 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
         }
     }, [publicKey, brokerPubkey, calc, selectedToken, amountNum, depositCurrency, connection, sendTransaction, onSuccess]);
 
-    const stepLabel: Record<TxStep, string> = {
-        idle: "Start DCA",
-        creating_order: "Creating order…",
-        awaiting_deposit: "Sign deposit TX…",
-        awaiting_fee: "Sign fee TX…",
-        confirming: "Confirming…",
-        done: "✓ Active!",
+    const STEP_LABELS: Record<TxStep, string> = {
+        idle: "",
+        creating_order: "Creating Order...",
+        checking_balance: "Checking Wallet Balance...",
+        awaiting_deposit: "Confirming Deposit...",
+        awaiting_fee: "Confirming Broker Fee...",
+        confirming: "Finalizing Order...",
+        done: "Success!",
     };
 
     if (!publicKey) {
@@ -296,7 +329,7 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
                         <span>{calc.totalDays} days</span>
                     </div>
                     <div className="fee-row">
-                        <span>Broker fee (5%)</span>
+                        <span>Broker fee (1%)</span>
                         <span>${calc.feeAmountUsd.toFixed(2)} ≈ {calc.feeAmountSol.toFixed(4)} SOL</span>
                     </div>
                     <div className="fee-row fee-total">
@@ -317,7 +350,7 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
                 disabled={isLoading || !isValidAmount}
                 onClick={handleSubmit}
             >
-                {isLoading ? stepLabel[txStep] : txStep === "done" ? stepLabel.done : "Start DCA →"}
+                {isLoading ? STEP_LABELS[txStep] : txStep === "done" ? STEP_LABELS.done : "Start DCA →"}
             </button>
         </div>
     );

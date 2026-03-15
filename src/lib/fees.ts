@@ -1,4 +1,4 @@
-export const FEE_PERCENT = 0.05; // 5%
+export const FEE_PERCENT = 0.01; // 1%
 export const DAILY_BUY_AMOUNT_USD = 1.0; // $1 per day
 export const MIN_DEPOSIT_USD = 5;
 export const MAX_DEPOSIT_USD = 10_000;

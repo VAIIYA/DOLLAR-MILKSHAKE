@@ -83,6 +83,7 @@ export type DepositCurrency = "USDC" | "SOL";
 export type TxStep =
     | "idle"
     | "creating_order"
+    | "checking_balance"
     | "awaiting_deposit"
     | "awaiting_fee"
     | "confirming"
