@@ -15,7 +15,7 @@ import {
     createAssociatedTokenAccountIdempotentInstruction,
     getMint,
 } from "@solana/spl-token";
-import { USDC_MINT, SOL_MINT } from "@/lib/tokens";
+import { USDC_MINT, SOL_MINT, DMS_TOKEN } from "@/lib/tokens";
 import type { Memecoin } from "@/lib/tokens";
 import { calculateOrder, feeSolToLamports } from "@/lib/fees";
 import type { OrderCalculation } from "@/lib/fees";
@@ -44,30 +44,8 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
     const isValidAmount = !isNaN(amountNum) && amountNum >= 5 && amountNum <= 10000;
 
     useEffect(() => {
-        let isMounted = true;
-        async function loadTokens() {
-            try {
-                const res = await fetch("https://tokens.jup.ag/tokens?tags=verified");
-                if (!res.ok) return;
-                const data = await res.json();
-                if (!isMounted) return;
-                const mapped: Memecoin[] = data.map((t: any) => ({
-                    symbol: t.symbol,
-                    name: t.name,
-                    mint: t.address,
-                    decimals: t.decimals,
-                    logoUrl: t.logoURI,
-                }));
-                setTokens(mapped);
-
-                const defaultToken = mapped.find(t => t.symbol === "WEN") || mapped[0];
-                setSelectedToken(defaultToken);
-            } catch (err) {
-                console.error("Failed to load tokens:", err);
-            }
-        }
-        loadTokens();
-        return () => { isMounted = false; };
+        setTokens([DMS_TOKEN]);
+        setSelectedToken(DMS_TOKEN);
     }, []);
 
     useEffect(() => {
@@ -242,13 +220,6 @@ export default function DepositForm({ onSuccess }: DepositFormProps) {
             <div className="form-section">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>Choose a memecoin</label>
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--background)' }}
-                    />
                 </div>
                 <div className="token-grid">
                     {tokens.length === 0 ? (
