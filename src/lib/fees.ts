@@ -16,13 +16,20 @@ export interface OrderCalculation {
 
 export async function getSolPriceUsd(): Promise<number> {
     try {
-        const res = await fetch("https://price.jup.ag/v6/price?ids=SOL", {
+        // Use our internal proxy to keep the API key safe if on the client
+        const baseUrl = typeof window !== "undefined" ? "" : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const res = await fetch(`${baseUrl}/api/price?ids=SOL`, {
             next: { revalidate: 60 } // Cache for 60 seconds
         });
-        if (!res.ok) return ROUGH_SOL_PRICE_USD;
+        if (!res.ok) {
+            console.warn(`Failed to fetch price from proxy: ${res.status}`);
+            return ROUGH_SOL_PRICE_USD;
+        }
         const json = await res.json();
+        // Handle V2 response format (data.SOL.price)
         return json.data?.SOL?.price ?? ROUGH_SOL_PRICE_USD;
-    } catch {
+    } catch (err) {
+        console.error("Failed to fetch SOL price:", err);
         return ROUGH_SOL_PRICE_USD;
     }
 }
